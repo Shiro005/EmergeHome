@@ -1,4 +1,4 @@
-import { User, Search, MapPin, ChevronDown, Menu, X, Clock, TrendingUp } from "lucide-react";
+import { Search, MapPin, ChevronDown, Menu, X, Clock, TrendingUp } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 
 const Header = () => {
@@ -6,7 +6,6 @@ const Header = () => {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
-  const [isAccountDropdownOpen, setIsAccountDropdownOpen] = useState(false);
   const [showSearchSuggestions, setShowSearchSuggestions] = useState(false);
   const [searchHistory, setSearchHistory] = useState([
     "LED ceiling lights",
@@ -75,7 +74,7 @@ const Header = () => {
       // Hide suggestions
       setShowSearchSuggestions(false);
       
-      // Simulate search action
+      // Simulate search action - you can replace this with actual search logic
       alert(`Searching for "${query}" in ${selectedCategory} category`);
     }
   };
@@ -121,7 +120,6 @@ const Header = () => {
   const closeDropdowns = () => {
     setIsLocationDropdownOpen(false);
     setIsCategoryDropdownOpen(false);
-    setIsAccountDropdownOpen(false);
     setShowSearchSuggestions(false);
   };
 
@@ -130,8 +128,8 @@ const Header = () => {
       <header className="bg-gray-900 text-white shadow-lg" onClick={(e) => e.stopPropagation()}>
         {/* Main header section */}
         <div className="bg-gray-900 border-b border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 py-2">
-            <div className="flex items-center gap-4">
+          <div className="max-w-7xl mx-auto px-4 py-3">
+            <div className="flex items-center gap-6">
               
               {/* Logo */}
               <div className="flex-shrink-0">
@@ -142,50 +140,42 @@ const Header = () => {
               </div>
 
               {/* Delivery Location */}
-              <div className="hidden md:flex items-center text-sm cursor-pointer hover:bg-gray-800 px-2 py-1 rounded relative">
+              <div className="hidden md:flex items-center text-sm cursor-pointer hover:bg-gray-800 px-3 py-2 rounded-md relative transition-colors">
                 <div onClick={(e) => {
                   e.stopPropagation();
                   setIsLocationDropdownOpen(!isLocationDropdownOpen);
                   setIsCategoryDropdownOpen(false);
-                  setIsAccountDropdownOpen(false);
                   setShowSearchSuggestions(false);
                 }}>
-                  <MapPin size={16} className="text-orange-400 mr-1" />
-                  <div className="text-xs text-gray-300">Deliver to</div>
-                  <div className="font-semibold text-white">Nagpur 440001</div>
+                  <MapPin size={16} className="text-orange-400 mr-2" />
+                  <div>
+                    <div className="text-xs text-gray-300">Deliver to</div>
+                    <div className="font-semibold text-white">Nagpur 440001</div>
+                  </div>
                 </div>
                 
                 {isLocationDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-1 bg-white text-black rounded shadow-lg p-4 z-50 w-64">
-                    <div className="font-semibold mb-2">Choose your location</div>
+                  <div className="absolute top-full left-0 mt-2 bg-white text-black rounded-lg shadow-xl p-4 z-50 w-64 border">
+                    <div className="font-semibold mb-2 text-gray-800">Choose your location</div>
                     <div className="text-sm text-gray-600 mb-3">Delivery options and fees may vary</div>
-                    <div className="space-y-2">
-                      <div 
-                        className="hover:bg-gray-100 p-2 rounded cursor-pointer"
-                        onClick={() => handleLocationSelect("Nagpur, Maharashtra")}
-                      >
-                        Nagpur, Maharashtra
-                      </div>
-                      <div 
-                        className="hover:bg-gray-100 p-2 rounded cursor-pointer"
-                        onClick={() => handleLocationSelect("Mumbai, Maharashtra")}
-                      >
-                        Mumbai, Maharashtra
-                      </div>
-                      <div 
-                        className="hover:bg-gray-100 p-2 rounded cursor-pointer"
-                        onClick={() => handleLocationSelect("Pune, Maharashtra")}
-                      >
-                        Pune, Maharashtra
-                      </div>
+                    <div className="space-y-1">
+                      {["Nagpur, Maharashtra", "Mumbai, Maharashtra", "Pune, Maharashtra", "Delhi, India", "Bangalore, Karnataka"].map((location) => (
+                        <div 
+                          key={location}
+                          className="hover:bg-gray-100 p-2 rounded-md cursor-pointer transition-colors text-sm"
+                          onClick={() => handleLocationSelect(location)}
+                        >
+                          {location}
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Enhanced Search Section */}
-              <div className="flex-1 max-w-2xl mx-4 relative">
-                <div className="flex">
+              <div className="flex-1 max-w-3xl mx-4 relative">
+                <div className="flex rounded-lg overflow-hidden shadow-sm">
                   {/* Category Dropdown */}
                   <div className="relative">
                     <button
@@ -194,17 +184,16 @@ const Header = () => {
                         e.stopPropagation();
                         setIsCategoryDropdownOpen(!isCategoryDropdownOpen);
                         setIsLocationDropdownOpen(false);
-                        setIsAccountDropdownOpen(false);
                         setShowSearchSuggestions(false);
                       }}
-                      className="bg-gray-200 hover:bg-gray-300 text-black px-3 py-2.5 rounded-l-md border-r border-gray-400 flex items-center gap-1 text-sm font-medium min-w-[80px]"
+                      className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-3 border-r border-gray-400 flex items-center gap-2 text-sm font-medium min-w-[100px] transition-colors"
                     >
                       <span className="truncate">{selectedCategory}</span>
                       <ChevronDown size={14} />
                     </button>
                     
                     {isCategoryDropdownOpen && (
-                      <div className="absolute top-full left-0 mt-1 bg-white text-black rounded shadow-lg max-h-64 overflow-y-auto z-50 w-48">
+                      <div className="absolute top-full left-0 mt-1 bg-white text-black rounded-lg shadow-xl max-h-64 overflow-y-auto z-50 w-48 border">
                         {categories.map((category) => (
                           <div
                             key={category}
@@ -212,7 +201,7 @@ const Header = () => {
                               e.stopPropagation();
                               handleCategorySelect(category);
                             }}
-                            className={`px-4 py-2 hover:bg-gray-100 cursor-pointer text-sm ${
+                            className={`px-4 py-3 hover:bg-gray-100 cursor-pointer text-sm transition-colors ${
                               category === selectedCategory ? 'bg-orange-50 text-orange-600 font-medium' : ''
                             }`}
                           >
@@ -224,35 +213,37 @@ const Header = () => {
                   </div>
 
                   {/* Search Input */}
-                  <input
-                    ref={searchInputRef}
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    onFocus={handleSearchFocus}
-                    placeholder={`Search EmergeHome ${selectedCategory !== 'All' ? `in ${selectedCategory}` : ''}...`}
-                    className="flex-1 px-4 py-2.5 text-black focus:outline-none focus:ring-2 focus:ring-orange-400"
-                    onClick={(e) => e.stopPropagation()}
-                  />
+                  <div className="flex-1 relative">
+                    <input
+                      ref={searchInputRef}
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyPress={handleKeyPress}
+                      onFocus={handleSearchFocus}
+                      placeholder={`Search EmergeHome ${selectedCategory !== 'All' ? `in ${selectedCategory}` : ''}...`}
+                      className="w-full px-4 py-3 text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-inset"
+                      onClick={(e) => e.stopPropagation()}
+                    />
 
-                  {/* Clear Search Button */}
-                  {searchQuery && (
-                    <button
-                      onClick={() => {
-                        setSearchQuery("");
-                        searchInputRef.current?.focus();
-                      }}
-                      className="px-2 py-2.5 text-gray-500 hover:text-gray-700 bg-white"
-                    >
-                      <X size={16} />
-                    </button>
-                  )}
+                    {/* Clear Search Button */}
+                    {searchQuery && (
+                      <button
+                        onClick={() => {
+                          setSearchQuery("");
+                          searchInputRef.current?.focus();
+                        }}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
 
                   {/* Search Button */}
                   <button
                     onClick={() => handleSearch()}
-                    className="bg-orange-400 hover:bg-orange-500 px-4 py-2.5 rounded-r-md transition-colors"
+                    className="bg-orange-400 hover:bg-orange-500 px-6 py-3 transition-colors flex items-center justify-center"
                   >
                     <Search className="text-gray-900" size={20} />
                   </button>
@@ -261,22 +252,22 @@ const Header = () => {
                 {/* Search Suggestions Dropdown */}
                 {showSearchSuggestions && (
                   <div 
-                    className="absolute top-full left-0 right-0 mt-1 bg-white text-black rounded shadow-lg z-50 max-h-96 overflow-y-auto"
+                    className="absolute top-full left-0 right-0 mt-2 bg-white text-black rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto border"
                     onClick={(e) => e.stopPropagation()}
                   >
                     {/* Current query suggestions */}
                     {filteredSuggestions.length > 0 && (
                       <div className="border-b border-gray-200">
-                        <div className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50">
+                        <div className="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 rounded-t-lg">
                           Suggestions for "{searchQuery}"
                         </div>
                         {filteredSuggestions.map((suggestion, index) => (
                           <div
                             key={index}
                             onClick={() => handleSuggestionClick(suggestion)}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                            className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-center gap-3 transition-colors"
                           >
-                            <Search size={14} className="text-gray-400" />
+                            <Search size={16} className="text-gray-400" />
                             <span className="text-sm">{suggestion}</span>
                           </div>
                         ))}
@@ -286,11 +277,11 @@ const Header = () => {
                     {/* Search History */}
                     {searchHistory.length > 0 && !searchQuery && (
                       <div className="border-b border-gray-200">
-                        <div className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 flex justify-between items-center">
+                        <div className="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50 flex justify-between items-center">
                           <span>Recent Searches</span>
                           <button
                             onClick={clearSearchHistory}
-                            className="text-xs text-blue-600 hover:underline"
+                            className="text-xs text-orange-600 hover:text-orange-700 font-medium transition-colors"
                           >
                             Clear All
                           </button>
@@ -298,13 +289,13 @@ const Header = () => {
                         {searchHistory.map((item, index) => (
                           <div
                             key={index}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center justify-between group"
+                            className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-center justify-between group transition-colors"
                           >
                             <div 
                               onClick={() => handleSuggestionClick(item)}
-                              className="flex items-center gap-2 flex-1"
+                              className="flex items-center gap-3 flex-1"
                             >
-                              <Clock size={14} className="text-gray-400" />
+                              <Clock size={16} className="text-gray-400" />
                               <span className="text-sm">{item}</span>
                             </div>
                             <button
@@ -312,7 +303,7 @@ const Header = () => {
                                 e.stopPropagation();
                                 removeFromHistory(item);
                               }}
-                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded"
+                              className="opacity-0 group-hover:opacity-100 p-1 hover:bg-gray-200 rounded transition-all"
                             >
                               <X size={12} className="text-gray-500" />
                             </button>
@@ -324,16 +315,16 @@ const Header = () => {
                     {/* Trending Searches */}
                     {!searchQuery && (
                       <div>
-                        <div className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50">
+                        <div className="px-4 py-3 text-sm font-medium text-gray-600 bg-gray-50">
                           Trending Searches
                         </div>
                         {trendingSearches.map((trend, index) => (
                           <div
                             key={index}
                             onClick={() => handleSuggestionClick(trend)}
-                            className="px-4 py-2 hover:bg-gray-100 cursor-pointer flex items-center gap-2"
+                            className="px-4 py-3 hover:bg-gray-100 cursor-pointer flex items-center gap-3 transition-colors"
                           >
-                            <TrendingUp size={14} className="text-orange-400" />
+                            <TrendingUp size={16} className="text-orange-400" />
                             <span className="text-sm">{trend}</span>
                           </div>
                         ))}
@@ -343,55 +334,11 @@ const Header = () => {
                 )}
               </div>
 
-              {/* Account & Language */}
-              <div className="flex items-center gap-4">
-                
-                {/* Language Selector */}
-                <div className="hidden md:flex items-center text-sm cursor-pointer hover:bg-gray-800 px-2 py-1 rounded">
-                  <span className="mr-1">🇮🇳</span>
-                  <span>EN</span>
-                  <ChevronDown size={14} className="ml-1" />
-                </div>
-
-                {/* Account */}
-                <div className="relative">
-                  <div 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsAccountDropdownOpen(!isAccountDropdownOpen);
-                      setIsLocationDropdownOpen(false);
-                      setIsCategoryDropdownOpen(false);
-                      setShowSearchSuggestions(false);
-                    }}
-                    className="flex items-center text-sm cursor-pointer hover:bg-gray-800 px-2 py-1 rounded"
-                  >
-                    <User size={20} className="mr-2" />
-                    <div className="hidden md:block">
-                      <div className="text-xs text-gray-300">Hello, Sign in</div>
-                      <div className="font-semibold">Account & Lists</div>
-                    </div>
-                    <ChevronDown size={14} className="ml-1" />
-                  </div>
-
-                  {isAccountDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-1 bg-white text-black rounded shadow-lg w-64 z-50">
-                      <div className="p-4 border-b">
-                        <button className="w-full bg-orange-400 hover:bg-orange-500 text-white py-2 rounded mb-2 transition-colors">
-                          Sign In
-                        </button>
-                        <div className="text-sm">
-                          New customer? <span className="text-blue-600 cursor-pointer hover:underline">Start here.</span>
-                        </div>
-                      </div>
-                      <div className="p-2">
-                        <div className="hover:bg-gray-100 p-2 rounded cursor-pointer text-sm transition-colors">Your Account</div>
-                        <div className="hover:bg-gray-100 p-2 rounded cursor-pointer text-sm transition-colors">Your Orders</div>
-                        <div className="hover:bg-gray-100 p-2 rounded cursor-pointer text-sm transition-colors">Your Wish List</div>
-                        <div className="hover:bg-gray-100 p-2 rounded cursor-pointer text-sm transition-colors">Your Recommendations</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
+              {/* Language Selector */}
+              <div className="hidden md:flex items-center text-sm cursor-pointer hover:bg-gray-800 px-3 py-2 rounded-md transition-colors">
+                <span className="mr-2 text-lg">🇮🇳</span>
+                <span className="font-medium">EN</span>
+                <ChevronDown size={14} className="ml-1" />
               </div>
             </div>
           </div>
@@ -399,17 +346,17 @@ const Header = () => {
 
         {/* Navigation Bar */}
         <nav className="bg-gray-800">
-          <div className="max-w-7xl mx-auto px-4 py-2">
+          <div className="max-w-7xl mx-auto px-4 py-3">
             <div className="flex items-center gap-6 text-sm overflow-x-auto scrollbar-hide">
-              <div className="flex items-center gap-1 cursor-pointer hover:bg-gray-700 px-2 py-1 rounded transition-colors">
+              <div className="flex items-center gap-2 cursor-pointer hover:bg-gray-700 px-3 py-2 rounded-md transition-colors">
                 <Menu size={16} />
-                <span className="font-medium">All</span>
+                <span className="font-medium">All Departments</span>
               </div>
               
               {["Today's Deals", "Best Sellers", "New Arrivals", "Furniture", "Lighting", "Home Décor", "Kitchen & Dining", "Outdoor Living", "Customer Service"].map((item) => (
                 <button
                   key={item}
-                  className="whitespace-nowrap hover:bg-gray-700 px-2 py-1 rounded transition-colors cursor-pointer"
+                  className="whitespace-nowrap hover:bg-gray-700 px-3 py-2 rounded-md transition-colors cursor-pointer"
                   onClick={() => {
                     console.log(`Navigating to ${item}`);
                     alert(`Navigating to ${item} section`);
