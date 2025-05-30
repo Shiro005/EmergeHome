@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { database } from '../../Firebase/Firebase';
 import { ref, onValue } from 'firebase/database';
@@ -7,7 +7,7 @@ import {
   Filter, ChevronRight, Menu, Heart, User, MapPin, Gift, Zap,
   Home as HomeIcon, Smartphone, Shirt, Book, Gamepad2, Baby, Car, PaintBucket,
   Utensils, Sofa, Bed, ShowerHead, Lock, Lightbulb, ChevronLeft,
-  TrendingUp, Clock, Shield, IndianRupee
+  TrendingUp, Clock, Shield, IndianRupee, X, Check
 } from 'lucide-react';
 
 const Home = () => {
@@ -16,11 +16,15 @@ const Home = () => {
   const [filteredProducts, setFilteredProducts] = useState({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
   const [sortBy, setSortBy] = useState('');
   const [currentBanner, setCurrentBanner] = useState(0);
   const [showSearch, setShowSearch] = useState(false);
   const [latestProducts, setLatestProducts] = useState([]);
+  const [showCategorySidebar, setShowCategorySidebar] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const searchRef = useRef(null);
+  const [isSearchSticky, setIsSearchSticky] = useState(false);
 
   // Color constants
   const colors = {
@@ -32,7 +36,9 @@ const Home = () => {
     background: '#FAF3EB',
     textDark: '#333333',
     textLight: '#666666',
-    border: '#E0E0E0'
+    border: '#E0E0E0',
+    success: '#4CAF50',
+    info: '#2196F3'
   };
 
   // Banner data for rotating banners
@@ -41,28 +47,31 @@ const Home = () => {
       id: 1,
       title: "Premium Home Essentials",
       subtitle: "Curated collection of top-quality products for your home",
-      gradient: `from-[${colors.primary}] via-[${colors.primaryLight}] to-[${colors.accent}]`,
+      image: 'https://images.pexels.com/photos/135620/pexels-photo-135620.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
       icon: <ShoppingCart className="w-6 h-6 md:w-8 md:h-8 text-white" />,
       partners: ["Best Quality", "Trusted Brands", "Premium Selection"],
-      bgColor: `bg-gradient-to-r from-[${colors.primary}] to-[${colors.accent}]`
+      buttonText: "Shop Now",
+      buttonColor: colors.primary
     },
     {
       id: 2,
       title: "Fast & Reliable Delivery",
       subtitle: "Get your products delivered quickly and safely",
-      gradient: `from-[${colors.accent}] via-[${colors.primary}] to-[${colors.primaryLight}]`,
+      image: 'https://images.pexels.com/photos/1087727/pexels-photo-1087727.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
       icon: <Truck className="w-6 h-6 md:w-8 md:h-8 text-white" />,
       partners: ["Free Shipping", "Easy Returns", "24/7 Support"],
-      bgColor: `bg-gradient-to-r from-[${colors.accent}] to-[${colors.primary}]`
+      buttonText: "Learn More",
+      buttonColor: colors.accent
     },
     {
       id: 3,
       title: "Exclusive Deals",
       subtitle: "Special discounts for our valued customers",
-      gradient: `from-[${colors.primaryDark}] via-[${colors.primary}] to-[${colors.accent}]`,
+      image: 'https://images.pexels.com/photos/4004127/pexels-photo-4004127.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2',
       icon: <TrendingUp className="w-6 h-6 md:w-8 md:h-8 text-white" />,
       partners: ["Limited Time", "Member Discounts", "Seasonal Offers"],
-      bgColor: `bg-gradient-to-r from-[${colors.primaryDark}] to-[${colors.accent}]`
+      buttonText: "View Offers",
+      buttonColor: colors.primaryDark
     }
   ];
 
@@ -300,9 +309,30 @@ const Home = () => {
         "Track, Rail And Cable Lighting System"
       ]
     }
-  }
+  };
 
-  // Rotate banners every 5 seconds
+  // Handle scroll for sticky search
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 100) {
+        setIsSearchSticky(true);
+      } else {
+        setIsSearchSticky(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Focus search when shown on mobile
+  useEffect(() => {
+    if (showSearch && searchRef.current) {
+      searchRef.current.focus();
+    }
+  }, [showSearch]);
+
+  // Rotate banners with fade animation
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentBanner((prev) => (prev + 1) % banners.length);
@@ -354,10 +384,10 @@ const Home = () => {
       }, {});
     }
 
-    if (selectedCategory !== '') {
+    if (selectedCategories.length > 0) {
       filtered = Object.keys(filtered).reduce((acc, key) => {
         const product = filtered[key];
-        if (product.category === selectedCategory) {
+        if (selectedCategories.includes(product.category)) {
           acc[key] = product;
         }
         return acc;
@@ -383,7 +413,7 @@ const Home = () => {
     }
 
     setFilteredProducts(filtered);
-  }, [searchTerm, selectedCategory, sortBy, products]);
+  }, [searchTerm, selectedCategories, sortBy, products]);
 
   const renderStars = (rating) => {
     const stars = [];
@@ -404,7 +434,7 @@ const Home = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedCategory('');
+    setSelectedCategories([]);
     setSortBy('');
   };
 
@@ -415,7 +445,7 @@ const Home = () => {
   };
 
   const handleProductClick = (productId, category) => {
-    navigate(`/product/${encodeURIComponent(category)}`, {
+    navigate(`/product/${productId}`, {
       state: {
         product: products[productId],
         categoryName: category
@@ -424,7 +454,7 @@ const Home = () => {
   };
 
   const handleViewAll = (category) => {
-    navigate(`/category/${encodeURIComponent(category)}`, {
+    navigate(`/products`, {
       state: {
         products: Object.values(products).filter(p => p.category === category),
         categoryName: category
@@ -432,10 +462,46 @@ const Home = () => {
     });
   };
 
+  const handleViewNewArrivals = () => {
+    navigate(`/products`, {
+      state: {
+        products: latestProducts,
+        title: "New Arrivals"
+      }
+    });
+  };
+
+  const toggleCategory = (category) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  const toggleSubCategory = (category, subCategory) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [`${category}-${subCategory}`]: !prev[`${category}-${subCategory}`]
+    }));
+  };
+
+  const handleCategorySelect = (category) => {
+    if (selectedCategories.includes(category)) {
+      setSelectedCategories(selectedCategories.filter(c => c !== category));
+    } else {
+      setSelectedCategories([...selectedCategories, category]);
+    }
+  };
+
+  const applyCategoryFilters = () => {
+    setShowCategorySidebar(false);
+    // The useEffect will automatically update filteredProducts based on selectedCategories
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
-        <div className="text-center pt-32">
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: colors.background }}>
+        <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-4 border-orange-500 border-t-transparent mx-auto mb-6"></div>
           <h2 className="text-2xl font-bold" style={{ color: colors.accent }}>Loading Premium Products...</h2>
           <p className="text-gray-600">Curating the best home essentials for you</p>
@@ -446,126 +512,154 @@ const Home = () => {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: colors.background }}>
+      {/* Sticky Search Bar (Desktop) */}
+      <div className={`hidden lg:block ${isSearchSticky ? 'fixed top-0 left-0 right-0 z-50 shadow-md py-2' : ''}`}
+        style={{ 
+          backgroundColor: isSearchSticky ? 'rgba(255, 255, 255, 0.95)' : 'transparent',
+          transition: 'all 0.3s ease'
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+              style={{ borderColor: colors.border }}
+            />
+            <Search className="absolute right-3 top-3.5 text-gray-400 w-5 h-5" />
+          </div>
+        </div>
+      </div>
 
-      {/* Search Bar (Mobile) */}
-      <div className={`lg:hidden fixed top-16 left-0 right-0 z-20 px-4 transition-all duration-300 ${showSearch ? 'translate-y-0' : '-translate-y-full'}`}>
-        <div className="relative bg-white shadow-md rounded-lg">
+      {/* Mobile Search Bar */}
+      <div className={`lg:hidden fixed top-16 left-0 right-0 z-50 px-4 transition-all duration-300 ${showSearch ? 'translate-y-0' : '-translate-y-full'}`}
+        style={{ 
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          backdropFilter: 'blur(10px)'
+        }}
+      >
+        <div className="relative py-2">
           <input
+            ref={searchRef}
             type="text"
             placeholder="Search products..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full px-4 py-3 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+            className="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
             style={{ borderColor: colors.border }}
           />
+          <button 
+            onClick={() => setShowSearch(false)}
+            className="absolute right-12 top-3.5 text-gray-400 w-5 h-5"
+          >
+            <X className="w-5 h-5" />
+          </button>
           <Search className="absolute right-3 top-3.5 text-gray-400 w-5 h-5" />
         </div>
       </div>
 
-      {/* Rotating Banner */}
-      <div className="relative h-56 md:h-64 overflow-hidden">
+      {/* Mobile Search Toggle Button */}
+      <div className="lg:hidden fixed bottom-6 right-6 z-40">
+        <button
+          onClick={() => setShowSearch(!showSearch)}
+          className="w-14 h-14 rounded-full shadow-lg flex items-center justify-center"
+          style={{ backgroundColor: colors.primary, color: colors.white }}
+        >
+          <Search className="w-6 h-6" />
+        </button>
+      </div>
+
+      {/* Rotating Banner with Fade Animation */}
+      <div className="relative h-80 md:h-96 overflow-hidden">
         {banners.map((banner, index) => (
           <div
             key={banner.id}
-            className={`absolute inset-0 transition-transform duration-1000 ease-in-out ${index === currentBanner ? 'transform translate-x-0' :
-                index < currentBanner ? 'transform -translate-x-full' : 'transform translate-x-full'
-              }`}
-            style={{ background: `linear-gradient(135deg, ${colors.primary}, ${colors.accent})` }}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentBanner ? 'opacity-100' : 'opacity-0'}`}
           >
+            <div 
+              className="absolute inset-0 bg-black opacity-40"
+              style={{
+                background: `linear-gradient(to right, rgba(0,0,0,0.7), rgba(0,0,0,0.3)`
+              }}
+            ></div>
+            <img
+              src={banner.image}
+              alt={banner.title}
+              className="w-full h-full object-cover"
+            />
             <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center">
-              <div className="text-white">
-                <div className="flex items-center mb-3">
+              <div className="text-white max-w-md">
+                <div className="flex items-center mb-4">
                   {banner.icon}
-                  <h2 className="text-2xl md:text-3xl font-bold ml-3">{banner.title}</h2>
+                  <h2 className="text-3xl md:text-4xl font-bold ml-3">{banner.title}</h2>
                 </div>
-                <p className="text-sm md:text-base mb-4 opacity-90">{banner.subtitle}</p>
-                <div className="flex flex-wrap gap-2">
+                <p className="text-lg md:text-xl mb-6 opacity-90">{banner.subtitle}</p>
+                <div className="flex flex-wrap gap-2 mb-6">
                   {banner.partners.map((partner, idx) => (
                     <span
                       key={idx}
-                      className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-xs font-medium"
+                      className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium"
                       style={{ backdropFilter: 'blur(5px)' }}
                     >
                       {partner}
                     </span>
                   ))}
                 </div>
+                <button
+                  className="px-6 py-3 rounded-lg font-bold flex items-center gap-2 hover:scale-105 transition-transform"
+                  style={{ backgroundColor: banner.buttonColor }}
+                >
+                  {banner.buttonText}
+                  <ChevronRight className="w-5 h-5" />
+                </button>
               </div>
             </div>
-
-            {/* Decorative elements */}
-            <div className="absolute top-10 right-20 w-24 h-24 bg-white opacity-10 rounded-full hidden md:block"></div>
-            <div className="absolute bottom-10 right-40 w-16 h-16 bg-white opacity-10 rounded-full hidden md:block"></div>
           </div>
         ))}
 
         {/* Banner navigation dots */}
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
           {banners.map((_, index) => (
             <button
               key={index}
               onClick={() => setCurrentBanner(index)}
-              className={`w-2 h-2 rounded-full transition-all ${index === currentBanner ? 'bg-white w-4' : 'bg-white bg-opacity-50'
-                }`}
+              className={`w-3 h-3 rounded-full transition-all ${index === currentBanner ? 'bg-white w-6' : 'bg-white bg-opacity-50'}`}
             />
           ))}
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Search and Filters */}
-        <div className="mb-6">
+        {/* Filters Section */}
+        <div className="mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4" style={{ borderColor: colors.border }}>
-            {/* Search Bar (Desktop) */}
-            <div className="hidden lg:block mb-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search products..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-4 py-3 pr-10 border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  style={{ borderColor: colors.border }}
-                />
-                <Search className="absolute right-3 top-3.5 text-gray-400 w-5 h-5" />
-              </div>
-            </div>
-
-            {/* Mobile Search Toggle */}
-            <div className="lg:hidden flex justify-center mb-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              {/* Category Filter Button */}
               <button
-                onClick={() => setShowSearch(!showSearch)}
-                className="flex items-center justify-center w-full py-2 px-4 rounded-lg font-medium"
-                style={{ backgroundColor: colors.primary, color: colors.white }}
+                onClick={() => setShowCategorySidebar(true)}
+                className="flex-1 px-4 py-3 bg-gray-50 rounded-lg flex items-center justify-between"
+                style={{ border: `1px solid ${colors.border}` }}
               >
-                <Search className="w-5 h-5 mr-2" />
-                Search Products
+                <span className="text-sm font-medium" style={{ color: colors.textDark }}>
+                  {selectedCategories.length > 0 ? 
+                    `${selectedCategories.length} category selected` : 
+                    'All Categories'}
+                </span>
+                <Filter className="w-5 h-5" style={{ color: colors.textLight }} />
               </button>
-            </div>
 
-            <div className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
-                  style={{ borderColor: colors.border }}
-                >
-                  <option value="">All Categories</option>
-                  {Object.keys(categoriesData).map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-              </div>
-
+              {/* Sort By Dropdown */}
               <div className="flex-1">
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="w-full px-3 py-2.5 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                  className="w-full px-4 py-3 text-sm border-2 border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                   style={{ borderColor: colors.border }}
                 >
-                  <option value="">Sort By</option>
+                  <option value="">Sort By: Recommended</option>
                   <option value="price-low">Price: Low to High</option>
                   <option value="price-high">Price: High to Low</option>
                   <option value="rating">Highest Rated</option>
@@ -573,13 +667,14 @@ const Home = () => {
                 </select>
               </div>
 
-              {(searchTerm || selectedCategory || sortBy) && (
+              {/* Clear Filters Button */}
+              {(searchTerm || selectedCategories.length > 0 || sortBy) && (
                 <button
                   onClick={clearFilters}
-                  className="px-4 py-2.5 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
+                  className="px-4 py-3 bg-gray-100 text-gray-700 hover:bg-gray-200 rounded-lg font-medium text-sm flex items-center justify-center gap-2"
                   style={{ backgroundColor: colors.background, color: colors.accent }}
                 >
-                  <Filter className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                   Clear
                 </button>
               )}
@@ -587,15 +682,121 @@ const Home = () => {
           </div>
         </div>
 
+        {/* Category Sidebar */}
+        {showCategorySidebar && (
+          <div className="fixed inset-0 z-50 overflow-hidden">
+            <div 
+              className="absolute inset-0 bg-black bg-opacity-50"
+              onClick={() => setShowCategorySidebar(false)}
+            ></div>
+            <div className="absolute inset-y-0 right-0 max-w-full flex">
+              <div className="relative w-screen max-w-md">
+                <div className="h-full flex flex-col bg-white shadow-xl">
+                  <div className="flex-1 overflow-y-auto">
+                    <div className="px-4 py-6 bg-gray-50">
+                      <div className="flex items-start justify-between">
+                        <h2 className="text-lg font-medium" style={{ color: colors.accent }}>
+                          Filter by Category
+                        </h2>
+                        <button
+                          onClick={() => setShowCategorySidebar(false)}
+                          className="p-1 rounded-md hover:bg-gray-100"
+                        >
+                          <X className="h-6 w-6" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="px-4 py-4">
+                      {Object.keys(categoriesData).map(category => (
+                        <div key={category} className="mb-4">
+                          <div 
+                            className="flex justify-between items-center cursor-pointer"
+                            onClick={() => toggleCategory(category)}
+                          >
+                            <div className="flex items-center">
+                              <input
+                                type="checkbox"
+                                checked={selectedCategories.includes(category)}
+                                onChange={() => handleCategorySelect(category)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="h-4 w-4 rounded border-gray-300 mr-3"
+                                style={{ accentColor: colors.primary }}
+                              />
+                              <span className="font-medium">{category}</span>
+                            </div>
+                            <ChevronRight 
+                              className={`w-5 h-5 transition-transform ${expandedCategories[category] ? 'transform rotate-90' : ''}`}
+                            />
+                          </div>
+
+                          {expandedCategories[category] && (
+                            <div className="ml-7 mt-2">
+                              {Object.keys(categoriesData[category]).map(subCategory => (
+                                <div key={subCategory} className="mb-3">
+                                  {subCategory !== '_uncategorized' && (
+                                    <div 
+                                      className="flex justify-between items-center cursor-pointer mb-2"
+                                      onClick={() => toggleSubCategory(category, subCategory)}
+                                    >
+                                      <span className="text-sm font-medium">{subCategory}</span>
+                                      <ChevronRight 
+                                        className={`w-4 h-4 transition-transform ${expandedCategories[`${category}-${subCategory}`] ? 'transform rotate-90' : ''}`}
+                                      />
+                                    </div>
+                                  )}
+
+                                  {(subCategory === '_uncategorized' || expandedCategories[`${category}-${subCategory}`]) && (
+                                    <div className="ml-4 space-y-2">
+                                      {categoriesData[category][subCategory].map(item => (
+                                        <div key={item} className="flex items-center">
+                                          <input
+                                            type="checkbox"
+                                            checked={selectedCategories.includes(item)}
+                                            onChange={() => handleCategorySelect(item)}
+                                            className="h-4 w-4 rounded border-gray-300 mr-2"
+                                            style={{ accentColor: colors.primary }}
+                                          />
+                                          <span className="text-sm">{item}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="border-t border-gray-200 px-4 py-4">
+                    <button
+                      onClick={applyCategoryFilters}
+                      className="w-full px-4 py-3 rounded-lg font-medium flex items-center justify-center gap-2"
+                      style={{ backgroundColor: colors.primary, color: colors.white }}
+                    >
+                      <Check className="w-5 h-5" />
+                      Apply Filters ({selectedCategories.length})
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Latest Products Section */}
         {latestProducts.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4 px-2">
-              <h3 className="text-lg font-bold" style={{ color: colors.accent }}>
+          <div className="mb-12">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold" style={{ color: colors.accent }}>
                 New Arrivals
-              </h3>
+              </h2>
               <button
-                className="flex items-center text-sm font-medium transition-colors"
+                onClick={handleViewNewArrivals}
+                className="flex items-center text-sm font-medium transition-colors hover:text-orange-600"
                 style={{ color: colors.primary }}
               >
                 View All
@@ -603,54 +804,59 @@ const Home = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {latestProducts.map((product, index) => (
                 <div
                   key={index}
-                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer"
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group"
                   style={{ borderColor: colors.border }}
                   onClick={() => handleProductClick(product.id, product.category)}
                 >
-                  <div className="relative h-40 overflow-hidden">
+                  <div className="relative h-48 overflow-hidden">
                     <img
                       src={product.imageUrl || 'https://via.placeholder.com/300x200?text=Product+Image'}
                       alt={product.name}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       onError={(e) => {
                         e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
                       }}
                     />
                     {product.topBrand && (
                       <div
-                        className="absolute top-2 left-2 text-white px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
+                        className="absolute top-2 left-2 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
                         style={{ backgroundColor: colors.primary }}
                       >
                         <Award className="w-3 h-3" />
                         Top Brand
                       </div>
                     )}
+                    <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                   </div>
 
-                  <div className="p-3">
-                    <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: colors.accent }}>
+                  <div className="p-4">
+                    <h4 className="font-medium text-base mb-2 line-clamp-2" style={{ color: colors.accent }}>
                       {product.name}
                     </h4>
 
-                    <div className="flex items-center gap-0.5 mb-1">
+                    <div className="flex items-center gap-0.5 mb-3">
                       {renderStars(product.rating)}
                       <span className="text-xs ml-1" style={{ color: colors.textLight }}>({product.rating})</span>
                     </div>
 
-                    <div className="flex items-center justify-between mt-3">
-                      <div className="text-base font-bold flex items-center" style={{ color: colors.primaryDark }}>
-                        <IndianRupee className="w-3 h-3 mr-0.5" />
-                        {product.price}
+                    <div className="flex items-center justify-between">
+                      <div className="text-lg font-bold flex items-center" style={{ color: colors.primaryDark }}>
+                        <IndianRupee className="w-4 h-4 mr-0.5" />
+                        {product.price.toLocaleString()}
                       </div>
                       <button
-                        className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1"
+                        className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 hover:bg-orange-600 transition-colors"
                         style={{ backgroundColor: colors.primary, color: colors.white }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Handle add to cart
+                        }}
                       >
-                        <ShoppingCart className="w-3 h-3" />
+                        <ShoppingCart className="w-4 h-4" />
                         Buy
                       </button>
                     </div>
@@ -661,56 +867,40 @@ const Home = () => {
           </div>
         )}
 
-        {/* Categories Grid */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-4 px-2" style={{ color: colors.accent }}>
+        {/* Shop by Categories */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold mb-6" style={{ color: colors.accent }}>
             Shop by Categories
           </h2>
-          <div className="relative">
-            <div className="overflow-x-auto pb-4">
-              <div className="flex space-x-4 w-max">
-                {Object.keys(categoriesData).map(category => {
-                  const IconComponent = categoryIcons[category] || Home;
-                  const categoryCount = Object.values(products).filter(p => p.category === category).length;
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {Object.keys(categoriesData).map(category => {
+              const IconComponent = categoryIcons[category] || HomeIcon;
+              const categoryCount = Object.values(products).filter(p => p.category === category).length;
 
-                  return (
-                    <button
-                      key={category}
-                      onClick={() => {
-                        setSelectedCategory(category);
-                        setSearchTerm('');
-                        setSortBy('');
-                      }}
-                      className={`group flex-shrink-0 w-36 bg-white rounded-xl shadow-sm hover:shadow-md border p-4 transition-all duration-200 ${selectedCategory === category ? 'border-orange-500' : 'border-gray-200'
-                        }`}
-                      style={{
-                        borderColor: selectedCategory === category ? colors.primary : colors.border
-                      }}
+              return (
+                <div
+                  key={category}
+                  onClick={() => handleViewAll(category)}
+                  className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 transition-all duration-300 hover:shadow-md cursor-pointer group"
+                  style={{ borderColor: colors.border }}
+                >
+                  <div className="flex flex-col items-center text-center">
+                    <div
+                      className="w-14 h-14 rounded-full flex items-center justify-center mb-3 transition-all group-hover:bg-orange-100"
+                      style={{ backgroundColor: colors.background }}
                     >
-                      <div className="flex flex-col items-center text-center">
-                        <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center mb-3 transition-all ${selectedCategory === category ? 'bg-orange-500' : 'bg-gray-800'
-                            } group-hover:bg-orange-500`}
-                        >
-                          <IconComponent className="w-5 h-5 text-white" />
-                        </div>
-                        <h3
-                          className="font-medium text-sm mb-1 transition-colors"
-                          style={{
-                            color: selectedCategory === category ? colors.primary : colors.accent
-                          }}
-                        >
-                          {category.split(' ')[0]}
-                        </h3>
-                        <p className="text-xs" style={{ color: colors.textLight }}>
-                          {categoryCount} items
-                        </p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+                      <IconComponent className="w-6 h-6" style={{ color: colors.primary }} />
+                    </div>
+                    <h3 className="font-medium text-sm mb-1" style={{ color: colors.accent }}>
+                      {category}
+                    </h3>
+                    <p className="text-xs" style={{ color: colors.textLight }}>
+                      {categoryCount} items
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -720,14 +910,14 @@ const Home = () => {
           if (categoryProducts.length === 0) return null;
 
           return (
-            <div key={categoryName} className="mb-8">
-              <div className="flex items-center justify-between mb-4 px-2">
-                <h3 className="text-lg font-bold" style={{ color: colors.accent }}>
+            <div key={categoryName} className="mb-12">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold" style={{ color: colors.accent }}>
                   {categoryName}
-                </h3>
+                </h2>
                 <button
                   onClick={() => handleViewAll(categoryName)}
-                  className="flex items-center text-sm font-medium transition-colors"
+                  className="flex items-center text-sm font-medium transition-colors hover:text-orange-600"
                   style={{ color: colors.primary }}
                 >
                   View All
@@ -735,147 +925,59 @@ const Home = () => {
                 </button>
               </div>
 
-              <div className="relative">
-                <div className="overflow-x-auto pb-4">
-                  <div className="flex space-x-4 w-max">
-                    {categoryProducts.map((product, index) => (
-                      <div
-                        key={index}
-                        className="flex-shrink-0 w-64 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer"
-                        style={{ borderColor: colors.border }}
-                        onClick={() => handleProductClick(product.id, product.category)}
-                      >
-                        <div className="relative h-40 overflow-hidden">
-                          <img
-                            src={product.imageUrl || 'https://via.placeholder.com/300x200?text=Product+Image'}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
-                            }}
-                          />
-                          {product.topBrand && (
-                            <div
-                              className="absolute top-2 left-2 text-white px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
-                              style={{ backgroundColor: colors.primary }}
-                            >
-                              <Award className="w-3 h-3" />
-                              Top Brand
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="p-3">
-                          <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: colors.accent }}>
-                            {product.name}
-                          </h4>
-
-                          <div className="flex items-center gap-0.5 mb-1">
-                            {renderStars(product.rating)}
-                            <span className="text-xs ml-1" style={{ color: colors.textLight }}>({product.rating})</span>
-                          </div>
-
-                          <div className="flex items-center justify-between mt-3">
-                            <div className="text-base font-bold flex items-center" style={{ color: colors.primaryDark }}>
-                              <IndianRupee className="w-3 h-3 mr-0.5" />
-                              {product.price}
-                            </div>
-                            <button
-                              className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1"
-                              style={{ backgroundColor: colors.primary, color: colors.white }}
-                            >
-                              <ShoppingCart className="w-3 h-3" />
-                              Buy
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* All Products Section */}
-        {selectedCategory && (
-          <div className="mt-8">
-            <h3 className="text-xl font-bold mb-4 px-2" style={{ color: colors.accent }}>
-              {selectedCategory} Products ({Object.keys(filteredProducts).length})
-            </h3>
-
-            {Object.keys(filteredProducts).length === 0 ? (
-              <div className="text-center py-12 bg-white rounded-xl shadow-sm border border-gray-100" style={{ borderColor: colors.border }}>
-                <ShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <h3 className="text-lg font-medium mb-1" style={{ color: colors.accent }}>No products found</h3>
-                <p className="text-sm" style={{ color: colors.textLight }}>Try adjusting your search or filters</p>
-                <button
-                  onClick={clearFilters}
-                  className="mt-4 px-4 py-2 rounded-lg text-sm font-medium"
-                  style={{ backgroundColor: colors.primary, color: colors.white }}
-                >
-                  Clear Filters
-                </button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                {Object.entries(filteredProducts).map(([productId, product]) => (
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {categoryProducts.map((product, index) => (
                   <div
-                    key={productId}
-                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-200 cursor-pointer"
+                    key={index}
+                    className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-all duration-300 cursor-pointer group"
                     style={{ borderColor: colors.border }}
-                    onClick={() => handleProductClick(productId, product.category)}
+                    onClick={() => handleProductClick(product.id, product.category)}
                   >
-                    <div className="relative h-40 overflow-hidden">
+                    <div className="relative h-48 overflow-hidden">
                       <img
                         src={product.imageUrl || 'https://via.placeholder.com/300x200?text=Product+Image'}
                         alt={product.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
                           e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
                         }}
                       />
                       {product.topBrand && (
                         <div
-                          className="absolute top-2 left-2 text-white px-2 py-0.5 rounded-full text-xs font-medium flex items-center gap-1"
+                          className="absolute top-2 left-2 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1"
                           style={{ backgroundColor: colors.primary }}
                         >
                           <Award className="w-3 h-3" />
                           Top Brand
                         </div>
                       )}
+                      <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
                     </div>
 
-                    <div className="p-3">
-                      <div className="mb-1">
-                        <span
-                          className="inline-block px-2 py-0.5 rounded-full text-xs font-medium"
-                          style={{ backgroundColor: colors.background, color: colors.primary }}
-                        >
-                          {product.category}
-                        </span>
-                      </div>
-
-                      <h4 className="font-medium text-sm mb-1 line-clamp-2" style={{ color: colors.accent }}>
+                    <div className="p-4">
+                      <h4 className="font-medium text-base mb-2 line-clamp-2" style={{ color: colors.accent }}>
                         {product.name}
                       </h4>
 
-                      <div className="flex items-center gap-0.5 mb-1">
+                      <div className="flex items-center gap-0.5 mb-3">
                         {renderStars(product.rating)}
                         <span className="text-xs ml-1" style={{ color: colors.textLight }}>({product.rating})</span>
                       </div>
 
-                      <div className="flex items-center justify-between mt-3">
-                        <div className="text-base font-bold flex items-center" style={{ color: colors.primaryDark }}>
-                          <IndianRupee className="w-3 h-3 mr-0.5" />
-                          {product.price}
+                                           <div className="flex items-center justify-between">
+                        <div className="text-lg font-bold flex items-center" style={{ color: colors.primaryDark }}>
+                          <IndianRupee className="w-4 h-4 mr-0.5" />
+                          {product.price.toLocaleString()}
                         </div>
                         <button
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1"
+                          className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-1 hover:bg-orange-600 transition-colors"
                           style={{ backgroundColor: colors.primary, color: colors.white }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Handle add to cart
+                          }}
                         >
-                          <ShoppingCart className="w-3 h-3" />
+                          <ShoppingCart className="w-4 h-4" />
                           Buy
                         </button>
                       </div>
@@ -883,124 +985,66 @@ const Home = () => {
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+          );
+        })}
+
+        {/* Product Search Results */}
+        {searchTerm && Object.keys(filteredProducts).length === 0 && (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center" style={{ borderColor: colors.border }}>
+            <Search className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textLight }} />
+            <h3 className="text-xl font-medium mb-2" style={{ color: colors.accent }}>No products found</h3>
+            <p className="mb-4" style={{ color: colors.textLight }}>
+              We couldn't find any products matching "{searchTerm}"
+            </p>
+            <button
+              onClick={clearFilters}
+              className="px-6 py-2 rounded-lg font-medium"
+              style={{ backgroundColor: colors.primary, color: colors.white }}
+            >
+              Clear Search
+            </button>
           </div>
         )}
 
         {/* Features Section */}
-        <div className="mt-12">
-          <h2 className="text-xl font-bold mb-4 px-2 text-center" style={{ color: colors.accent }}>
-            Why Choose Us?
-          </h2>
-
-          <div className="relative">
-            <div className="overflow-x-auto pb-4">
-              <div className="flex space-x-4 w-max px-4 mx-auto">
-                {/* Feature 1 */}
-                <div
-                  className="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4"
-                  style={{ borderColor: colors.border }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 mx-auto"
-                    style={{ backgroundColor: colors.accent }}
-                  >
-                    <Shield className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-center mb-1" style={{ color: colors.accent }}>Trusted Partners</h3>
-                  <p className="text-xs text-center" style={{ color: colors.textLight }}>Amazon, Flipkart & Myntra</p>
-                </div>
-
-                {/* Feature 2 */}
-                <div
-                  className="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4"
-                  style={{ borderColor: colors.border }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 mx-auto"
-                    style={{ backgroundColor: colors.primary }}
-                  >
-                    <Truck className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-center mb-1" style={{ color: colors.accent }}>Fast Delivery</h3>
-                  <p className="text-xs text-center" style={{ color: colors.textLight }}>Free delivery on most products</p>
-                </div>
-
-                {/* Feature 3 */}
-                <div
-                  className="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4"
-                  style={{ borderColor: colors.border }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 mx-auto"
-                    style={{ backgroundColor: colors.accent }}
-                  >
-                    <RotateCcw className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-center mb-1" style={{ color: colors.accent }}>Easy Returns</h3>
-                  <p className="text-xs text-center" style={{ color: colors.textLight }}>Hassle-free returns</p>
-                </div>
-
-                {/* Feature 4 */}
-                <div
-                  className="flex-shrink-0 w-40 bg-white rounded-xl shadow-sm border border-gray-100 p-4"
-                  style={{ borderColor: colors.border }}
-                >
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center mb-3 mx-auto"
-                    style={{ backgroundColor: colors.primary }}
-                  >
-                    <Award className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="font-semibold text-sm text-center mb-1" style={{ color: colors.accent }}>Quality Products</h3>
-                  <p className="text-xs text-center" style={{ color: colors.textLight }}>Top brands only</p>
-                </div>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-12" style={{ borderColor: colors.border }}>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="flex items-start">
+              <div className="bg-orange-100 p-3 rounded-full mr-4">
+                <Truck className="w-6 h-6" style={{ color: colors.primary }} />
+              </div>
+              <div>
+                <h4 className="font-medium mb-1" style={{ color: colors.accent }}>Free Shipping</h4>
+                <p className="text-sm" style={{ color: colors.textLight }}>On orders over ₹999</p>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Small Feature Icons */}
-        <div
-          className="mt-8 rounded-xl p-4"
-          style={{ backgroundColor: colors.accent }}
-        >
-          <div className="grid grid-cols-4 gap-4">
-            <div className="flex flex-col items-center">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center mb-1"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-              >
-                <IndianRupee className="w-4 h-4 text-white" />
+            <div className="flex items-start">
+              <div className="bg-orange-100 p-3 rounded-full mr-4">
+                <RotateCcw className="w-6 h-6" style={{ color: colors.primary }} />
               </div>
-              <span className="text-white text-xs text-center">Affordable</span>
+              <div>
+                <h4 className="font-medium mb-1" style={{ color: colors.accent }}>Easy Returns</h4>
+                <p className="text-sm" style={{ color: colors.textLight }}>30-day return policy</p>
+              </div>
             </div>
-            <div className="flex flex-col items-center">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center mb-1"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-              >
-                <Clock className="w-4 h-4 text-white" />
+            <div className="flex items-start">
+              <div className="bg-orange-100 p-3 rounded-full mr-4">
+                <Shield className="w-6 h-6" style={{ color: colors.primary }} />
               </div>
-              <span className="text-white text-xs text-center">Fast Delivery</span>
+              <div>
+                <h4 className="font-medium mb-1" style={{ color: colors.accent }}>Secure Payment</h4>
+                <p className="text-sm" style={{ color: colors.textLight }}>100% secure checkout</p>
+              </div>
             </div>
-            <div className="flex flex-col items-center">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center mb-1"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-              >
-                <Shield className="w-4 h-4 text-white" />
+            <div className="flex items-start">
+              <div className="bg-orange-100 p-3 rounded-full mr-4">
+                <Award className="w-6 h-6" style={{ color: colors.primary }} />
               </div>
-              <span className="text-white text-xs text-center">Secure</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <div
-                className="w-8 h-8 rounded-full flex items-center justify-center mb-1"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-              >
-                <User className="w-4 h-4 text-white" />
+              <div>
+                <h4 className="font-medium mb-1" style={{ color: colors.accent }}>Quality Products</h4>
+                <p className="text-sm" style={{ color: colors.textLight }}>Premium brands</p>
               </div>
-              <span className="text-white text-xs text-center">24/7 Support</span>
             </div>
           </div>
         </div>
