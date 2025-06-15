@@ -4,6 +4,7 @@ import ProductsPage from './Pages/ProductPage/ProductPage';
 import ProductDetails from './Pages/ProductDetails/ProductDetails';
 import AdminPanel from './Pages/AdminPanel/AdminPanel';
 import Navbar from './Components/Header/Header';
+import Footer from './Components/Footer/Footer';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/product/:productId" element={<ProductDetails />} />
           <Route path="/admin" element={<AdminPanel />} />
         </Routes>
+        <Footer />
       </div>
     </Router>
   );

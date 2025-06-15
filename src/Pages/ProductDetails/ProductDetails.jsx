@@ -2,20 +2,20 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { database } from '../../Firebase/Firebase';
 import { ref, onValue } from 'firebase/database';
-import { 
-  Star, 
-  ExternalLink, 
-  ArrowLeft, 
-  Truck, 
-  RotateCcw, 
-  Shield, 
+import {
+  Star,
+  ExternalLink,
+  ArrowLeft,
+  Truck,
+  RotateCcw,
+  Shield,
   Award,
   Package,
   Heart
 } from 'lucide-react';
 
 const ProductDetails = () => {
-  const { id } = useParams();
+  const { productId } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -23,9 +23,9 @@ const ProductDetails = () => {
 
   // Fetch product details
   useEffect(() => {
-    if (!id) return;
+    if (!productId) return;
 
-    const productRef = ref(database, `products/${id}`);
+    const productRef = ref(database, `products/${productId}`);
     const unsubscribe = onValue(productRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -36,8 +36,8 @@ const ProductDetails = () => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [id]);
+  return () => unsubscribe();
+}, [productId]);
 
   // Fetch related products
   useEffect(() => {
@@ -48,8 +48,8 @@ const ProductDetails = () => {
       const data = snapshot.val();
       if (data) {
         const related = Object.entries(data)
-          .filter(([productId, prod]) => 
-            productId !== id && 
+          .filter(([pid, prod]) =>
+            pid !== productId &&
             prod.category === product.category &&
             prod.subcategory === product.subcategory
           )
@@ -59,7 +59,7 @@ const ProductDetails = () => {
     });
 
     return () => unsubscribe();
-  }, [product, id]);
+  }, [product, productId]);
 
   // Render star ratings
   const renderStars = (rating) => {
@@ -100,8 +100,8 @@ const ProductDetails = () => {
           <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Product Not Found</h2>
           <p className="text-gray-600 mb-6">The product you're looking for doesn't exist.</p>
-          <Link 
-            to="/products" 
+          <Link
+            to="/products"
             className="bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors inline-flex items-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -117,8 +117,8 @@ const ProductDetails = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Back Navigation */}
         <div className="mb-6">
-          <Link 
-            to="/products" 
+          <Link
+            to="/products"
             className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -140,7 +140,7 @@ const ProductDetails = () => {
                 }}
               />
             </div>
-            
+
             {/* Thumbnail Images (for future multiple images) */}
             {productImages.length > 1 && (
               <div className="flex gap-2 overflow-x-auto">
@@ -148,9 +148,8 @@ const ProductDetails = () => {
                   <button
                     key={index}
                     onClick={() => setSelectedImage(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${
-                      selectedImage === index ? 'border-orange-500' : 'border-gray-200'
-                    }`}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 ${selectedImage === index ? 'border-orange-500' : 'border-gray-200'
+                      }`}
                   >
                     <img
                       src={image}
@@ -264,21 +263,21 @@ const ProductDetails = () => {
                       </div>
                     )}
                   </div>
-                  
+
                   <div className="p-4">
                     <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
                       {relatedProduct.name}
                     </h3>
-                    
+
                     <div className="flex items-center mb-2">
                       <div className="flex items-center">
                         {renderStars(relatedProduct.rating)}
                         <span className="text-sm text-gray-600 ml-1">({relatedProduct.rating})</span>
                       </div>
                     </div>
-                    
+
                     <div className="text-lg font-bold text-gray-900 mb-3">₹{relatedProduct.price}</div>
-                    
+
                     <Link
                       to={`/product/${productId}`}
                       className="block bg-gray-900 text-white text-center py-2 px-3 rounded text-sm font-medium hover:bg-gray-800 transition-colors"

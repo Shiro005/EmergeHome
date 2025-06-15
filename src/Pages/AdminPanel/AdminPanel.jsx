@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { database } from '../../Firebase/Firebase';
 import { ref, push, set, remove, onValue, update } from 'firebase/database';
-import { Plus, Search, Edit, Trash2, Package, Star, Check, X, ExternalLink, ChevronDown, ChevronUp, IndianRupee, StepBack, FerrisWheelIcon } from 'lucide-react';
+import { Plus, Search, Edit, Trash2, Package, Star, Check, X, ExternalLink, ChevronDown, ChevronUp, IndianRupee, StepBack, FerrisWheelIcon, Truck, RefreshCw } from 'lucide-react';
 
 // Updated categories data with proper hierarchy
 const categoriesData = {
@@ -253,7 +253,8 @@ const AdminPanel = () => {
     referralLink: '',
     returnAvailable: false,
     freeDelivery: false,
-    topBrand: false
+    topBrand: false,
+    favorite: false // Add this line
   });
 
   // Fetch products from Firebase
@@ -331,7 +332,8 @@ const AdminPanel = () => {
       referralLink: '',
       returnAvailable: false,
       freeDelivery: false,
-      topBrand: false
+      topBrand: false,
+      favorite: false // Add this line
     });
     setEditingProduct(null);
     setShowAddForm(false);
@@ -416,7 +418,8 @@ const AdminPanel = () => {
       referralLink: product.referralLink || '',
       returnAvailable: product.returnAvailable || false,
       freeDelivery: product.freeDelivery || false,
-      topBrand: product.topBrand || false
+      topBrand: product.topBrand || false,
+      favorite: product.favorite || false // Add this line
     });
     setEditingProduct(productId);
     setSelectedCategory(product.category || '');
@@ -595,7 +598,7 @@ const AdminPanel = () => {
     <div className="min-h-screen bg-gray-50 p-4 md:p-6">
       <div className=" mx-auto">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-900 to-blue-700 rounded-lg shadow-lg p-6 mb-6">
+        <div className="bg-gradient-to-r from-gray-900 to-gray-700 rounded-lg shadow-lg p-6 mb-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-2">
@@ -859,6 +862,17 @@ const AdminPanel = () => {
                     <label className="flex items-center space-x-2">
                       <input
                         type="checkbox"
+                        name="favorite"
+                        checked={formData.favorite}
+                        onChange={handleInputChange}
+                        className="rounded border-gray-300 text-blue-900 focus:ring-blue-900"
+                      />
+                      <span className="text-sm font-medium text-gray-700">Favorite Product</span>
+                    </label>
+
+                    <label className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
                         name="topBrand"
                         checked={formData.topBrand}
                         onChange={handleInputChange}
@@ -949,103 +963,116 @@ const AdminPanel = () => {
                 {Object.entries(filteredProducts).map(([productId, product]) => (
                   <div
                     key={productId}
-                    className="border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl transition-all duration-300 bg-white group hover:border-blue-100"
+                    className="border border-gray-200 rounded-2xl overflow-hidden hover:shadow-2xl transition-all duration-300 bg-white group hover:border-blue-100 relative"
                   >
+                    {/* Badges Container (Top) */}
+                    <div className="absolute top-3 left-3 right-3 flex justify-between z-10">
+                      {product.favorite && (
+                        <div className="bg-gradient-to-r from-pink-500 to-pink-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-white" />
+                          <span>FAV</span>
+                        </div>
+                      )}
+                      {product.topBrand && (
+                        <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg flex items-center gap-1">
+                          <Check className="w-3 h-3" />
+                          <span>TOP</span>
+                        </div>
+                      )}
+                    </div>
+
                     {/* Image Section */}
-                    <div className="relative bg-gray-100 h-64 flex items-center justify-center border-b border-gray-200 overflow-hidden">
+                    <div className="relative bg-gray-100 h-64 flex items-center justify-center overflow-hidden">
                       <img
                         src={product.imageUrl}
                         alt={product.name}
-                        className="w-full h-full object-contain transition-transform duration-300 group-hover:scale-105"
+                        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110"
                         onError={(e) => {
                           e.target.src = 'https://via.placeholder.com/300x200?text=Image+Not+Found';
                           e.target.className = 'w-full h-full object-contain opacity-75';
                         }}
                       />
-                      {product.topBrand && (
-                        <div className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-1.5 rounded-full text-xs font-bold shadow-lg uppercase tracking-wide">
-                          Top Brand
-                        </div>
-                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
                     </div>
 
                     {/* Content Section */}
                     <div className="p-5 space-y-4">
                       {/* Category & Name */}
                       <div className="space-y-2">
-                        <p className="text-blue-800 text-sm font-medium uppercase tracking-wide">
+                        <p className="text-blue-800 text-xs font-semibold uppercase tracking-wider flex items-center gap-1">
+                          <Package className="w-3 h-3" />
                           {product.category}
                         </p>
-                        <h3 className="text-md font-semibold text-gray-900 leading-tight line-clamp-2">
+                        <h3 className="text-lg font-bold text-gray-900 leading-tight line-clamp-2">
                           {product.name}
                         </h3>
                       </div>
 
-                      {/* Rating */}
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center bg-blue-50 px-3 py-1.5 rounded-full">
+                      {/* Rating & Price */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center bg-blue-50/80 px-3 py-1 rounded-full backdrop-blur-sm">
                           {renderStars(product.rating)}
-                          <span className="text-sm text-blue-800 font-medium ml-2">
-                            ({product.rating})
+                          <span className="text-xs text-blue-800 font-medium ml-1">
+                            {product.rating}
                           </span>
                         </div>
+                        <p className="text-xl font-extrabold text-blue-900">
+                          ₹{product.price}
+                        </p>
                       </div>
 
-                      {/* Price & Badges */}
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div className="space-y-1">
-                          <p className="text-xl font-bold text-blue-900">
-                            ₹{product.price}
-                          </p>
-                          <div className="flex gap-2">
-                            {product.freeDelivery && (
-                              <span className="text-xs bg-green-100 text-green-800 px-2.5 py-1.5 rounded-full flex items-center">
-                                Free Delivery
-                              </span>
-                            )}
-                            {product.returnAvailable && (
-                              <span className="text-xs bg-blue-100 text-blue-800 px-2.5 py-1.5 rounded-full flex items-center">
-                                Returns Available
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                      {/* Delivery Badges */}
+                      <div className="flex flex-wrap gap-2">
+                        {product.freeDelivery && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full flex items-center gap-1">
+                            <Truck className="w-3 h-3" />
+                            <span>FREE</span>
+                          </span>
+                        )}
+                        {product.returnAvailable && (
+                          <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full flex items-center gap-1">
+                            <RefreshCw className="w-3 h-3" />
+                            <span>RETURN</span>
+                          </span>
+                        )}
                       </div>
 
                       {/* Product Details */}
-                      <p className="text-gray-600 text-base leading-relaxed line-clamp-3">
+                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
                         {product.details}
                       </p>
 
                       {/* Action Buttons */}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-3 gap-2">
                         <button
                           onClick={() => handleEdit(productId)}
-                          className="bg-blue-50 hover:bg-blue-100 text-blue-900 p-2 rounded-xl font-medium flex items-center justify-center gap-2 transition-all"
+                          className="bg-blue-50 hover:bg-blue-100 text-blue-900 p-2 rounded-xl font-medium flex items-center justify-center gap-1 transition-all hover:shadow-inner"
+                          title="Edit"
                         >
-                          <Edit className="w-5 h-5" />
-                          <span className="hidden sm:inline">Edit</span>
+                          <Edit className="w-4 h-4" />
+                          <span className="sr-only sm:not-sr-only sm:text-xs">Edit</span>
                         </button>
                         <button
                           onClick={() => handleDelete(productId)}
-                          className="bg-red-50 hover:bg-red-100 text-red-900 p-2 rounded-xl font-medium flex items-center justify-center gap-2 transition-all"
+                          className="bg-red-50 hover:bg-red-100 text-red-900 p-2 rounded-xl font-medium flex items-center justify-center gap-1 transition-all hover:shadow-inner"
+                          title="Delete"
                         >
-                          <Trash2 className="w-5 h-5" />
-                          <span className="hidden sm:inline">Delete</span>
+                          <Trash2 className="w-4 h-4" />
+                          <span className="sr-only sm:not-sr-only sm:text-xs">Delete</span>
                         </button>
                         <a
                           href={product.referralLink}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="bg-orange-50 hover:bg-orange-100 text-orange-900 p-2 rounded-xl font-medium flex items-center justify-center gap-2 transition-all"
+                          className="bg-orange-50 hover:bg-orange-100 text-orange-900 p-2 rounded-xl font-medium flex items-center justify-center gap-1 transition-all hover:shadow-inner"
+                          title="View"
                         >
-                          <ExternalLink className="w-5 h-5" />
-                          <span className="hidden sm:inline">View</span>
+                          <ExternalLink className="w-4 h-4" />
+                          <span className="sr-only sm:not-sr-only sm:text-xs">View</span>
                         </a>
                       </div>
                     </div>
                   </div>
-
                 ))}
               </div>
             )}
